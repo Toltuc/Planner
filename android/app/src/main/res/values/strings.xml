@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Планер</string>
+    <string name="title_activity_main">Планер</string>
+    <string name="package_name">com.guitar.planner</string>
+    <string name="custom_url_scheme">com.guitar.planner</string>
+</resources>
