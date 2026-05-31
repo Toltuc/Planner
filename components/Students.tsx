@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { format, addDays, isToday, isThisWeek, isThisMonth } from 'date-fns';
 import { Plus, Search, Trash2, GraduationCap, X, Snowflake, ChevronDown, UserCheck, Check, MoreHorizontal, Archive, RotateCcw, Copy, LogOut, CalendarDays } from 'lucide-react';
@@ -127,6 +127,16 @@ export default function Students() {
       });
     }
   }, [activeFilter]);
+
+  // Restore scroll of active SwipeTabs container after every render (prevents jump on state changes)
+  useLayoutEffect(() => {
+    const el = tableContainerRefs.current.get(activeFilter);
+    if (!el) return;
+    const saved = scrollPositionsRef.current[activeFilter];
+    if (saved !== undefined && el.scrollTop !== saved) {
+      el.scrollTop = saved;
+    }
+  });
 
   // Filter management state
   const [filterMenuId, setFilterMenuId] = useState<string | null>(null);
@@ -650,12 +660,14 @@ export default function Students() {
     return () => document.removeEventListener('pointerdown', handler);
   }, []);
 
-  // Close menus on scroll
+  // Close menus on window scroll (not on inner container scroll)
   useEffect(() => {
-    const handler = () => {
-      setFilterMenuId(null);
-      setShowPeriodMenu(false);
-      setSectionMenuStudent(null);
+    const handler = (e: Event) => {
+      if (e.target === document || e.target === document.documentElement || e.target === document.body) {
+        setFilterMenuId(null);
+        setShowPeriodMenu(false);
+        setSectionMenuStudent(null);
+      }
     };
     window.addEventListener('scroll', handler, true);
     return () => window.removeEventListener('scroll', handler, true);
@@ -1298,7 +1310,14 @@ export default function Students() {
               key={filter.id}
               className="flex-1 overflow-x-auto overflow-y-auto pinch-zoom-container h-full"
               style={{ touchAction: 'pan-x pan-y', overscrollBehavior: 'contain' }}
-              ref={(el) => { tableContainerRefs.current.set(filter.id, el); }}
+              onScroll={(e) => { scrollPositionsRef.current[filter.id] = (e.currentTarget as HTMLDivElement).scrollTop; }}
+              ref={(el) => {
+                tableContainerRefs.current.set(filter.id, el);
+                if (el) {
+                  const saved = scrollPositionsRef.current[filter.id];
+                  if (saved !== undefined) el.scrollTop = saved;
+                }
+              }}
             >
               {filterStudents.length > 0 ? (
                 <div style={{ minWidth: 'max-content', zoom: studentsScale }}>

@@ -479,7 +479,7 @@ export default function Schedule() {
       let prevEnd = workStartMin;
       for (let j = 0; j < merged.length; j++) {
         const iv = merged[j];
-        while (prevEnd + step <= iv.s && prevEnd + step <= workEndMin) {
+        while (prevEnd + step <= iv.s && prevEnd < workEndMin) {
           const h = Math.floor(prevEnd / 60);
           const mm = prevEnd % 60;
           free.push(`${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`);
@@ -487,7 +487,7 @@ export default function Schedule() {
         }
         prevEnd = Math.max(prevEnd, iv.e);
       }
-      while (prevEnd + step <= workEndMin) {
+      while (prevEnd < workEndMin) {
         const h = Math.floor(prevEnd / 60);
         const mm = prevEnd % 60;
         free.push(`${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`);
@@ -824,7 +824,7 @@ export default function Schedule() {
         >
 
           {/* LEFT Time Column - scrolls with calendar */}
-          <div className="flex-shrink-0 z-30 text-black bg-white" style={{ width: 56 }}>
+          <div className="flex-shrink-0 z-30 text-black bg-white flex flex-col" style={{ width: 56 }}>
             {/* Time header - sticky */}
             <div className="h-12 flex items-center justify-center border-b border-black/10 sticky top-0 z-40 bg-white">
               <span className="text-xs font-bold">Время</span>
@@ -851,6 +851,10 @@ export default function Schedule() {
                 </div>
               );
             })}
+            {/* Time footer - sticky bottom */}
+            <div className="h-10 flex items-center justify-center border-t border-black/10 sticky bottom-0 z-40 bg-white">
+              <span className="text-xs font-bold">Время</span>
+            </div>
           </div>
 
           {/* Days columns - no scale */}
@@ -1187,6 +1191,18 @@ export default function Schedule() {
                       </div>
                     );
                   })()}
+
+                  {/* Day Footer - sticky at bottom */}
+                  <div
+                    className={`h-10 flex flex-col items-center justify-center border-t border-white/10 sticky bottom-0 z-30 ${
+                      isToday ? 'bg-neon-purple/20' : 'glass-medium'
+                    }`}
+                  >
+                    <span className="text-xs font-medium">{DAYS[dayIndex]}</span>
+                    <span className={`text-[10px] ${isToday ? 'text-neon-purple' : 'text-white/60'}`}>
+                      {format(date, 'd MMM', { locale: ru })}
+                    </span>
+                  </div>
                 </div>
               );
             })}
@@ -1195,7 +1211,7 @@ export default function Schedule() {
           </div>{/* end days */}
 
           {/* RIGHT Time Column - scrolls with calendar */}
-          <div className="flex-shrink-0 z-30 text-black bg-white" style={{ width: 56 }}>
+          <div className="flex-shrink-0 z-30 text-black bg-white flex flex-col" style={{ width: 56 }}>
             {/* Time header - sticky */}
             <div className="h-12 flex items-center justify-center border-b border-black/10 sticky top-0 z-40 bg-white">
               <span className="text-xs font-bold">Время</span>
@@ -1222,6 +1238,10 @@ export default function Schedule() {
                 </div>
               );
             })}
+            {/* Time footer - sticky bottom */}
+            <div className="h-10 flex items-center justify-center border-t border-black/10 sticky bottom-0 z-40 bg-white">
+              <span className="text-xs font-bold">Время</span>
+            </div>
           </div>
 
         </div>{/* end flex */}

@@ -8,6 +8,7 @@ interface SwipeTabsProps {
   activeId: string;
   onTabChange: (id: string) => void;
   disableSwipe?: boolean;
+  directSwipe?: boolean;
   children: React.ReactNode[];
   onTabMenu?: (id: string, rect: DOMRect) => void;
   dragMode?: boolean;
@@ -20,7 +21,7 @@ interface SwipeTabsProps {
   onCatTouchEnd?: () => void;
 }
 
-export default function SwipeTabs({ tabs, activeId, onTabChange, children, onTabMenu, dragMode, wobble, disableSwipe, onCatDragStart, onCatDragOver, onCatDragEnd, onCatTouchStart, onCatTouchMove, onCatTouchEnd }: SwipeTabsProps) {
+export default function SwipeTabs({ tabs, activeId, onTabChange, children, onTabMenu, dragMode, wobble, disableSwipe, directSwipe, onCatDragStart, onCatDragOver, onCatDragEnd, onCatTouchStart, onCatTouchMove, onCatTouchEnd }: SwipeTabsProps) {
   const activeIndex = tabs.findIndex(t => t.id === activeId);
   const safeIndex = activeIndex < 0 ? Math.max(0, tabs.length - 1) : activeIndex;
 
@@ -128,20 +129,22 @@ export default function SwipeTabs({ tabs, activeId, onTabChange, children, onTab
   }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (dragMode || disableSwipe) return; // disable swipe during drag mode or disableSwipe
+    if (dragMode || disableSwipe) return;
     const dx = e.touches[0].clientX - touchStartX.current;
     const dy = e.touches[0].clientY - touchStartY.current;
 
     if (!isDragging.current) {
-      if (Math.abs(dx) < Math.abs(dy) * 0.8) return; // mostly vertical — ignore
+      if (Math.abs(dx) < Math.abs(dy) * 0.8) return;
       isDragging.current = true;
     }
 
-    // Check if we're at edges and show arrows for confirmation
+    if (directSwipe) {
+      dragDeltaX.current = dx;
+      return;
+    }
+
     const canSwipeL = canSwipeLeft();
     const canSwipeR = canSwipeRight();
-
-    // Show arrows when at edge and swiping in that direction
     if (dx < -30 && canSwipeL && safeIndex < tabs.length - 1) {
       setShowRightArrow(true);
       if (arrowTimeoutRef.current) clearTimeout(arrowTimeoutRef.current);
@@ -151,17 +154,26 @@ export default function SwipeTabs({ tabs, activeId, onTabChange, children, onTab
       if (arrowTimeoutRef.current) clearTimeout(arrowTimeoutRef.current);
       arrowTimeoutRef.current = setTimeout(() => setShowLeftArrow(false), 2000);
     }
-
-    // Block visual drag - only arrows allowed
-    return;
-  }, [dragMode, canSwipeLeft, canSwipeRight, safeIndex, tabs.length]);
+  }, [dragMode, directSwipe, canSwipeLeft, canSwipeRight, safeIndex, tabs.length]);
 
   const handleTouchEnd = useCallback(() => {
     if (!isDragging.current || dragMode || disableSwipe) return;
     isDragging.current = false;
+
+    if (directSwipe) {
+      const delta = dragDeltaX.current;
+      dragDeltaX.current = 0;
+      setLiveOffset(0);
+      if (delta < -50 && safeIndex < tabs.length - 1) {
+        onTabChange(tabs[safeIndex + 1].id);
+      } else if (delta > 50 && safeIndex > 0) {
+        onTabChange(tabs[safeIndex - 1].id);
+      }
+      return;
+    }
+
     setLiveOffset(0);
-    // Don't auto-swipe - user must tap arrow to confirm
-  }, [dragMode]);
+  }, [dragMode, directSwipe, safeIndex, tabs, onTabChange]);
 
   // Arrow click handlers for confirmed swipe
   const handleLeftArrowClick = useCallback(() => {

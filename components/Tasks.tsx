@@ -571,6 +571,7 @@ export default function Tasks() {
       )}
       {/* ── SwipeTabs wraps categories + their content ── */}
       <SwipeTabs
+        directSwipe
         tabs={swipeTabs}
         activeId={activeCatId}
         onTabChange={(id) => {
@@ -754,12 +755,20 @@ export default function Tasks() {
                       </div>
                       <p className="text-[10px] text-white/40 px-1">Эмодзи / буква</p>
                       <div className="flex flex-col gap-1">
-                        <input value={levelLabelEmoji} onChange={(e) => setLevelLabelEmoji(e.target.value.slice(0, 2))}
-                          placeholder="A или 🔥" className="w-full px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-xs focus:outline-none focus:border-neon-purple" />
                         <div className="flex gap-1">
+                          <input value={levelLabelEmoji} onChange={(e) => setLevelLabelEmoji(e.target.value.slice(0, 2))}
+                            placeholder="A или 🔥" className="flex-1 px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-xs focus:outline-none focus:border-neon-purple" />
                           <button onClick={() => handleSetLevelEmoji(level.id, levelLabelEmoji)}
-                            className="flex-1 px-2 py-1 rounded-lg bg-neon-purple text-xs">OK</button>
+                            className="px-2 py-1 rounded-lg bg-neon-purple text-xs">OK</button>
                           {level.emoji && <button onClick={() => handleSetLevelEmoji(level.id, '')} className="px-2 py-1 rounded-lg bg-white/5 text-xs">✕</button>}
+                        </div>
+                        <div className="flex flex-wrap gap-1 pt-0.5">
+                          {commonEmojis.map((em) => (
+                            <button key={em} onClick={() => { setLevelLabelEmoji(em); handleSetLevelEmoji(level.id, em); }}
+                              className="w-7 h-7 flex items-center justify-center text-base hover:bg-white/10 rounded transition-colors">
+                              {em}
+                            </button>
+                          ))}
                         </div>
                       </div>
                     </div>
