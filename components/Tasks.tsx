@@ -199,6 +199,7 @@ export default function Tasks() {
   // ── Level label picker (color + emoji)
   const [levelLabelId, setLevelLabelId] = useState<LevelId | null>(null);
   const [levelLabelEmoji, setLevelLabelEmoji] = useState('');
+  const [showLevelEmojiGrid, setShowLevelEmojiGrid] = useState(false);
   // ── Level menu/rename/move/add
   const [levelMenuId, setLevelMenuId] = useState<string | null>(null);
   const [levelMenuPos, setLevelMenuPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -210,6 +211,8 @@ export default function Tasks() {
   const [addingLevel, setAddingLevel] = useState<string | null>(null);
   const [newLevelName, setNewLevelName] = useState('');
   const [newLevelColor, setNewLevelColor] = useState('bg-neon-purple');
+  const [newLevelEmoji, setNewLevelEmoji] = useState('');
+  const [showNewLevelEmojiGrid, setShowNewLevelEmojiGrid] = useState(false);
   const levelEmojiPickerRef = useRef<HTMLDivElement>(null);
 
   const commonEmojis = useMemo<string[]>(() => {
@@ -351,15 +354,19 @@ export default function Tasks() {
     const name = newLevelName.trim();
     if (!name || !addingLevel) return;
     const id = uid();
-    update({ ...store, levels: [...store.levels, { id, name, categoryId: addingLevel, color: newLevelColor }] });
+    update({ ...store, levels: [...store.levels, { id, name, categoryId: addingLevel, color: newLevelColor, emoji: newLevelEmoji || undefined }] });
     setAddingLevel(null);
     setNewLevelName('');
     setNewLevelColor('bg-neon-purple');
+    setNewLevelEmoji('');
+    setShowNewLevelEmojiGrid(false);
   };
   const handleCancelAddLevel = () => {
     setAddingLevel(null);
     setNewLevelName('');
     setNewLevelColor('bg-neon-purple');
+    setNewLevelEmoji('');
+    setShowNewLevelEmojiGrid(false);
   };
   const handleSaveLevelRename = () => {
     if (!editingLevelId || !editingLevelName.trim()) { setEditingLevelId(null); return; }
@@ -755,21 +762,27 @@ export default function Tasks() {
                       </div>
                       <p className="text-[10px] text-white/40 px-1">Эмодзи / буква</p>
                       <div className="flex flex-col gap-1">
+                        <input value={levelLabelEmoji} onChange={(e) => setLevelLabelEmoji(e.target.value.slice(0, 2))}
+                          placeholder="A или 🔥" className="w-full px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-xs focus:outline-none focus:border-neon-purple" />
                         <div className="flex gap-1">
-                          <input value={levelLabelEmoji} onChange={(e) => setLevelLabelEmoji(e.target.value.slice(0, 2))}
-                            placeholder="A или 🔥" className="flex-1 px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-xs focus:outline-none focus:border-neon-purple" />
+                          <button
+                            onClick={() => setShowLevelEmojiGrid((v) => !v)}
+                            className={`px-2 py-1 rounded-lg text-base transition-colors ${showLevelEmojiGrid ? 'bg-neon-purple/30 text-white' : 'bg-white/5 hover:bg-white/10'}`}
+                            title="Выбрать эмодзи">😊</button>
                           <button onClick={() => handleSetLevelEmoji(level.id, levelLabelEmoji)}
-                            className="px-2 py-1 rounded-lg bg-neon-purple text-xs">OK</button>
+                            className="flex-1 px-2 py-1 rounded-lg bg-neon-purple text-xs font-medium">OK</button>
                           {level.emoji && <button onClick={() => handleSetLevelEmoji(level.id, '')} className="px-2 py-1 rounded-lg bg-white/5 text-xs">✕</button>}
                         </div>
-                        <div className="flex flex-wrap gap-1 pt-0.5">
-                          {commonEmojis.map((em) => (
-                            <button key={em} onClick={() => { setLevelLabelEmoji(em); handleSetLevelEmoji(level.id, em); }}
-                              className="w-7 h-7 flex items-center justify-center text-base hover:bg-white/10 rounded transition-colors">
-                              {em}
-                            </button>
-                          ))}
-                        </div>
+                        {showLevelEmojiGrid && (
+                          <div className="flex flex-wrap gap-1 pt-0.5">
+                            {commonEmojis.map((em) => (
+                              <button key={em} onClick={() => { setLevelLabelEmoji(em); handleSetLevelEmoji(level.id, em); setShowLevelEmojiGrid(false); }}
+                                className="w-7 h-7 flex items-center justify-center text-base hover:bg-white/10 rounded transition-colors">
+                                {em}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1015,8 +1028,22 @@ export default function Tasks() {
             </div>
             <div className="flex gap-2">
               <button onClick={handleAddLevel} className="flex-1 py-1.5 rounded-lg bg-neon-purple text-xs font-medium">Добавить</button>
+              <button
+                onClick={() => setShowNewLevelEmojiGrid((v) => !v)}
+                className={`px-2 py-1.5 rounded-lg text-base transition-colors ${showNewLevelEmojiGrid ? 'bg-neon-purple/30' : 'bg-white/5 hover:bg-white/10'}`}
+                title="Выбрать эмодзи">{newLevelEmoji || '😊'}</button>
               <button onClick={handleCancelAddLevel} className="px-3 py-1.5 rounded-lg bg-white/5 text-xs"><X className="w-3.5 h-3.5" /></button>
             </div>
+            {showNewLevelEmojiGrid && (
+              <div className="flex flex-wrap gap-1 pt-0.5">
+                {commonEmojis.map((em) => (
+                  <button key={em} onClick={() => { setNewLevelEmoji(em); setShowNewLevelEmojiGrid(false); }}
+                    className="w-7 h-7 flex items-center justify-center text-base hover:bg-white/10 rounded transition-colors">
+                    {em}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <button onClick={() => setAddingLevel(cat.id)}

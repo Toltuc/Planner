@@ -624,7 +624,9 @@ export default function Students() {
   // Click outside to close menus
   useEffect(() => {
     const handler = (e: PointerEvent) => {
-      if (filterMenuRef.current && !filterMenuRef.current.contains(e.target as Node)) {
+      const target = e.target as HTMLElement;
+      if (target.closest('[data-menu]')) return;
+      if (filterMenuRef.current && !filterMenuRef.current.contains(target)) {
         setFilterMenuId(null);
       }
     };
@@ -1203,7 +1205,7 @@ export default function Students() {
         </div>
 
         {/* Add new filter button */}
-        <div className="flex items-center gap-2">
+        <div className="px-3 pb-2">
           <button
             onClick={() => {
               const tempId = `__new__:${Date.now()}`;
@@ -1212,10 +1214,11 @@ export default function Students() {
               setIsNewFilter(true);
               setActiveFilter(tempId);
             }}
-            className="flex items-center justify-center w-8 h-8 rounded-lg text-lg font-medium bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors border border-white/10"
             title="Добавить раздел"
           >
-            +
+            <span className="text-lg leading-none">+</span>
+            <span>Раздел</span>
           </button>
         </div>
 
@@ -1288,12 +1291,12 @@ export default function Students() {
               const today = new Date().toISOString().split('T')[0];
               const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
               const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-              const studentLessons = getLessonsByDate(s.id);
-              if (activePeriod === 'yesterday') return studentLessons.some((l: Lesson) => l.date === yesterday);
-              if (activePeriod === 'today') return studentLessons.some((l: Lesson) => l.date === today);
-              if (activePeriod === 'tomorrow') return studentLessons.some((l: Lesson) => l.date === tomorrow);
-              if (activePeriod === 'week') return studentLessons.some((l: Lesson) => isThisWeek(new Date(l.date)));
-              if (activePeriod === 'month') return studentLessons.some((l: Lesson) => isThisMonth(new Date(l.date)));
+              const studentLessons = lessons.filter((l) => l.studentId === s.id && isUserLesson(l));
+              if (activePeriod === 'yesterday') return studentLessons.some((l) => l.date === yesterday);
+              if (activePeriod === 'today') return studentLessons.some((l) => l.date === today);
+              if (activePeriod === 'tomorrow') return studentLessons.some((l) => l.date === tomorrow);
+              if (activePeriod === 'week') return studentLessons.some((l) => isThisWeek(new Date(l.date + 'T00:00:00'), { weekStartsOn: 1 }));
+              if (activePeriod === 'month') return studentLessons.some((l) => isThisMonth(new Date(l.date + 'T00:00:00')));
               return true;
             })
             .filter((s) => {
@@ -1394,6 +1397,7 @@ export default function Students() {
           : Math.max(4, Math.min(filterMenuPos.x, viewportWidth - menuWidth - 8));
         return (
           <div
+            ref={filterMenuRef}
             data-filtermenu
             className="fixed z-[9999] w-40 rounded-xl shadow-2xl overflow-hidden border border-white/10"
             style={{ background: 'rgba(15,8,35,0.98)', backdropFilter: 'blur(12px)', left: leftPos, top: filterMenuPos.y }}

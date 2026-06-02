@@ -80,6 +80,8 @@ export default function Schedule() {
   
   const containerRef = useRef<HTMLDivElement>(null);
   const rightTimeRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
+  const footerInnerRef = useRef<HTMLDivElement>(null);
   const didScrollRef = useRef(false);
   const touchStartDistance = useRef<number>(0);
   const touchStartScale = useRef<number>(1);
@@ -227,6 +229,22 @@ export default function Schedule() {
       dragMovedRef.current = false;
     };
   }, []);
+
+  // Sync footer position with inner overflow-x-auto calendar grid via translateX
+  useEffect(() => {
+    const onScroll = (e: Event) => {
+      const src = e.target as HTMLElement;
+      if (src.classList.contains('pinch-zoom-container') || src.classList.contains('overflow-x-auto')) {
+        if (footerInnerRef.current) {
+          footerInnerRef.current.style.transform = `translateX(-${src.scrollLeft}px) scale(${scale})`;
+          footerInnerRef.current.style.transformOrigin = 'top left';
+        }
+      }
+    };
+    const container = containerRef.current;
+    container?.addEventListener('scroll', onScroll, { passive: true, capture: true });
+    return () => container?.removeEventListener('scroll', onScroll, { capture: true });
+  }, [scale]);
 
   const weekDates = useMemo(() => {
     const start = parseISO(currentWeekStart);
@@ -793,10 +811,13 @@ export default function Schedule() {
         </div>
       )}
 
+      {/* Calendar Grid + Footer wrapper */}
+      <div className="flex-1 flex flex-col min-h-0" style={{ overflow: 'hidden' }}>
+      <div className="overflow-x-hidden overflow-y-auto" style={{ flex: '0 1 auto', minHeight: 0 }} ref={containerRef}>
+
       {/* Calendar Grid - scrollable content */}
       <div
-        ref={containerRef}
-        className="flex-1 w-full overflow-x-auto overflow-y-auto pinch-zoom-container no-select relative"
+        className="w-full overflow-x-auto pinch-zoom-container no-select relative"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -825,8 +846,8 @@ export default function Schedule() {
 
           {/* LEFT Time Column - scrolls with calendar */}
           <div className="flex-shrink-0 z-30 text-black bg-white flex flex-col" style={{ width: 56 }}>
-            {/* Time header - sticky */}
-            <div className="h-12 flex items-center justify-center border-b border-black/10 sticky top-0 z-40 bg-white">
+            {/* Time header */}
+            <div className="h-12 flex items-center justify-center border-b border-black/10 bg-white">
               <span className="text-xs font-bold">Время</span>
             </div>
             {HOURS.map((hour) => {
@@ -851,10 +872,6 @@ export default function Schedule() {
                 </div>
               );
             })}
-            {/* Time footer - sticky bottom */}
-            <div className="h-10 flex items-center justify-center border-t border-black/10 sticky bottom-0 z-40 bg-white">
-              <span className="text-xs font-bold">Время</span>
-            </div>
           </div>
 
           {/* Days columns - no scale */}
@@ -884,7 +901,7 @@ export default function Schedule() {
                 >
                   {/* Day Header - sticky at top */}
                   <div
-                    className={`h-12 flex flex-col items-center justify-center border-b border-white/10 sticky top-0 z-30 ${
+                    className={`h-12 flex flex-col items-center justify-center border-b border-white/10 ${
                       isToday ? 'bg-neon-purple/20' : 'glass-medium'
                     }`}
                   >
@@ -1192,17 +1209,6 @@ export default function Schedule() {
                     );
                   })()}
 
-                  {/* Day Footer - sticky at bottom */}
-                  <div
-                    className={`h-10 flex flex-col items-center justify-center border-t border-white/10 sticky bottom-0 z-30 ${
-                      isToday ? 'bg-neon-purple/20' : 'glass-medium'
-                    }`}
-                  >
-                    <span className="text-xs font-medium">{DAYS[dayIndex]}</span>
-                    <span className={`text-[10px] ${isToday ? 'text-neon-purple' : 'text-white/60'}`}>
-                      {format(date, 'd MMM', { locale: ru })}
-                    </span>
-                  </div>
                 </div>
               );
             })}
@@ -1212,8 +1218,8 @@ export default function Schedule() {
 
           {/* RIGHT Time Column - scrolls with calendar */}
           <div className="flex-shrink-0 z-30 text-black bg-white flex flex-col" style={{ width: 56 }}>
-            {/* Time header - sticky */}
-            <div className="h-12 flex items-center justify-center border-b border-black/10 sticky top-0 z-40 bg-white">
+            {/* Time header */}
+            <div className="h-12 flex items-center justify-center border-b border-black/10 bg-white">
               <span className="text-xs font-bold">Время</span>
             </div>
             {HOURS.map((hour) => {
@@ -1238,14 +1244,55 @@ export default function Schedule() {
                 </div>
               );
             })}
-            {/* Time footer - sticky bottom */}
-            <div className="h-10 flex items-center justify-center border-t border-black/10 sticky bottom-0 z-40 bg-white">
-              <span className="text-xs font-bold">Время</span>
-            </div>
           </div>
 
         </div>{/* end flex */}
+      </div>{/* end calendar grid */}
+
       </div>{/* end scroll container */}
+
+      {/* Footer with day names - fixed outside scroll, synced horizontally */}
+      <div
+        ref={footerRef}
+        className="shrink-0 overflow-hidden"
+        style={{ scrollbarWidth: 'none' }}
+      >
+        <div
+          ref={footerInnerRef}
+          className="flex items-stretch"
+          style={{
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            width: `${100 / scale}%`,
+          }}
+        >
+          <div className="flex-shrink-0 bg-white flex items-center justify-center" style={{ width: 56, height: 40 }}>
+            <span className="text-xs font-bold text-black">Время</span>
+          </div>
+          <div className="flex">
+            {weekDates.map((date, dayIndex) => {
+              const isToday = isSameDay(date, new Date());
+              return (
+                <div key={dayIndex}
+                  className={`w-[80px] flex-shrink-0 h-10 flex flex-col items-center justify-center border-r border-white/5 ${
+                    isToday ? 'bg-neon-purple/20' : 'glass-medium'
+                  }`}
+                >
+                  <span className="text-xs font-medium">{DAYS[dayIndex]}</span>
+                  <span className={`text-[10px] ${isToday ? 'text-neon-purple' : 'text-white/60'}`}>
+                    {format(date, 'd MMM', { locale: ru })}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex-shrink-0 bg-white flex items-center justify-center" style={{ width: 56, height: 40 }}>
+            <span className="text-xs font-bold text-black">Время</span>
+          </div>
+        </div>
+      </div>
+
+      </div>{/* end calendar + footer wrapper */}
 
       {/* Joystick for Move Mode - floating at bottom */}
       {mode === 'move' && dragLesson && (
